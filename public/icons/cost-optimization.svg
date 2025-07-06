@@ -1,0 +1,12 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <!-- Background circle -->
+    <circle fill="#4CAF50" cx="64" cy="64" r="56"/>
+    
+    <!-- Dollar sign in the center -->
+    <text x="64" y="80" font-size="48" font-weight="bold" text-anchor="middle" fill="#FFF" font-family="Arial, sans-serif">$</text>
+    
+    <!-- Downward arrow indicating cost reduction -->
+    <path d="M90 30 L90 50 L98 50 L84 68 L70 50 L78 50 L78 30 Z" fill="#FFF" opacity="0.8"/>
+  </g>
+</svg>
