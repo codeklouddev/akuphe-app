@@ -31,6 +31,7 @@ yarn-error.log*
 
 # env files (can opt-in for commiting if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,4 +40,26 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+
+# screenshots directory (generated)
+/screenshots
+
+# temporary files
+*.tmp
+*.temp
+*.log
+
+# package lock files (optional - uncomment if you want to exclude)
+# package-lock.json
+# yarn.lock
