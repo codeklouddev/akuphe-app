@@ -53,7 +53,7 @@ next-env.d.ts
 Thumbs.db
 
 # screenshots directory (generated)
-/screenshots
+# /screenshots
 
 # temporary files
 *.tmp
