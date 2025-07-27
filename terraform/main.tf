@@ -2,37 +2,22 @@
 # NETWORKING (VPC, Subnets, Security Groups)
 #------------------------------------------------------------------------------
 
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-  tags = {
-    Name = "${var.app_name}-vpc"
-  }
+# Look up the default VPC and its subnets
+data "aws_vpc" "default" {
+  default = true
 }
 
-resource "aws_subnet" "private_a" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "${var.aws_region}a"
-  tags = {
-    Name = "${var.app_name}-private-subnet-a"
-  }
-}
-
-resource "aws_subnet" "private_b" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "${var.aws_region}b"
-  tags = {
-    Name = "${var.app_name}-private-subnet-b"
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
 
 resource "aws_security_group" "amplify_sg" {
   name        = "${var.app_name}-amplify-sg"
   description = "Security group for Amplify backend"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_vpc.default.id
 
   egress {
     from_port   = 0
@@ -45,7 +30,7 @@ resource "aws_security_group" "amplify_sg" {
 resource "aws_security_group" "docdb_sg" {
   name        = "${var.app_name}-docdb-sg"
   description = "Allow traffic to DocumentDB"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_vpc.default.id
 
   egress {
     from_port   = 0
@@ -72,7 +57,7 @@ resource "aws_security_group_rule" "allow_amplify_to_docdb" {
 
 resource "aws_docdb_subnet_group" "main" {
   name       = "${var.app_name}-docdb-subnet-group"
-  subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+  subnet_ids = data.aws_subnets.default.ids
 }
 
 resource "aws_docdb_cluster" "main" {
@@ -93,19 +78,47 @@ resource "aws_docdb_cluster_instance" "main" {
 }
 
 #------------------------------------------------------------------------------
+# IAM ROLE FOR AMPLIFY
+#------------------------------------------------------------------------------
+
+resource "aws_iam_role" "amplify_service_role" {
+  name = "${var.app_name}-amplify-service-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "amplify.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "amplify_admin_policy" {
+  role       = aws_iam_role.amplify_service_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess-Amplify"
+}
+
+
+#------------------------------------------------------------------------------
 # WEB & APP TIER (AWS Amplify for Next.js)
 #------------------------------------------------------------------------------
 
 resource "aws_amplify_app" "main" {
-  name         = var.app_name
-  repository   = "https://github.com/${var.github_repo}"
-  access_token = var.github_token
+  name                 = var.app_name
+  repository           = "https://github.com/${var.github_repo}"
+  access_token         = var.github_token
+  iam_service_role_arn = aws_iam_role.amplify_service_role.arn
 
   # Connects the Amplify backend to our VPC
   #vpc_config {
-    #vpc_id             = aws_vpc.main.id
+    #vpc_id             = data.aws_vpc.default.id
     #security_group_ids = [aws_security_group.amplify_sg.id]
-    #subnet_ids         = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+    #subnet_ids         = data.aws_subnets.default.ids
   #}
 
   # Environment variables for the Next.js app
@@ -122,5 +135,3 @@ resource "aws_amplify_branch" "main" {
   branch_name = "main" # Or your default branch
   stage       = "PRODUCTION"
 }
-
-// end of job
