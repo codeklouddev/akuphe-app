@@ -122,3 +122,5 @@ resource "aws_amplify_branch" "main" {
   branch_name = "main" # Or your default branch
   stage       = "PRODUCTION"
 }
+
+// end of job
