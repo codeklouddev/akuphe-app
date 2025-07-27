@@ -17,7 +17,7 @@ jobs:
       TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
       TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
       TF_VAR_github_repo: ${{ github.repository }}
-      TF_VAR_github_token: ${{ secrets.GITHUB_TOKEN }}
+      TF_VAR_github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       # For the AWS provider
       AWS_REGION: "us-east-1" # Change to your desired region
 
@@ -33,9 +33,9 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3 # Updated to v3
+      uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.8.0
+        terraform_version: 1.8.0 
 
     - name: Terraform Init
       id: init
