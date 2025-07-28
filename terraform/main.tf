@@ -103,9 +103,9 @@ resource "aws_iam_role_policy_attachment" "amplify_admin_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess-Amplify"
 }
 
-# Add a 30-second delay to allow IAM permissions to propagate
+# Add a 60-second delay to allow IAM permissions to propagate
 resource "time_sleep" "wait_for_iam_propagation" {
-  create_duration = "30s"
+  create_duration = "60s"
 
   depends_on = [
     aws_iam_role_policy_attachment.amplify_admin_policy
