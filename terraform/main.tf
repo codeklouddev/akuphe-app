@@ -2,6 +2,7 @@
 # NETWORKING (VPC, Subnets, Security Groups)
 #------------------------------------------------------------------------------
 
+# Look up the default VPC and its subnets
 data "aws_vpc" "default" {
   default = true
 }
@@ -39,6 +40,7 @@ resource "aws_security_group" "docdb_sg" {
   }
 }
 
+# This rule allows the Amplify App's backend to talk to the database
 resource "aws_security_group_rule" "allow_amplify_to_docdb" {
   type                     = "ingress"
   from_port                = 27017
@@ -47,6 +49,7 @@ resource "aws_security_group_rule" "allow_amplify_to_docdb" {
   security_group_id        = aws_security_group.docdb_sg.id
   source_security_group_id = aws_security_group.amplify_sg.id
 }
+
 
 #------------------------------------------------------------------------------
 # DATA TIER (DocumentDB)
@@ -95,35 +98,11 @@ resource "aws_iam_role" "amplify_service_role" {
   })
 }
 
-# Replace overly broad Admin policy with least-privilege custom inline policy
-resource "aws_iam_role_policy" "amplify_inline_policy" {
-  name = "${var.app_name}-amplify-inline-policy"
-  role = aws_iam_role.amplify_service_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = [
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DetachNetworkInterface",
-          "ec2:DeleteNetworkInterface",
-          "ec2:DescribeInstances",
-          "rds:*",
-          "docdb:*",
-          "iam:PassRole",
-          "logs:*",
-          "amplify:*",
-          "cloudformation:*",
-          "codebuild:*",
-          "s3:*"
-        ],
-        Resource = "*"
-      }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "amplify_admin_policy" {
+  role       = aws_iam_role.amplify_service_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess-Amplify"
 }
+
 
 #------------------------------------------------------------------------------
 # WEB & APP TIER (AWS Amplify for Next.js)
@@ -135,24 +114,28 @@ resource "aws_amplify_app" "main" {
   access_token         = var.github_token
   iam_service_role_arn = aws_iam_role.amplify_service_role.arn
 
-  # Optional: VPC config
-  # vpc_config {
-  #   vpc_id             = data.aws_vpc.default.id
-  #   security_group_ids = [aws_security_group.amplify_sg.id]
-  #   subnet_ids         = data.aws_subnets.default.ids
-  # }
+  # Connects the Amplify backend to our VPC
+  #vpc_config {
+    #vpc_id             = data.aws_vpc.default.id
+    #security_group_ids = [aws_security_group.amplify_sg.id]
+    #subnet_ids         = data.aws_subnets.default.ids
+  #}
 
+  # Environment variables for the Next.js app
   environment_variables = {
     DB_CONNECTION_STRING = "mongodb://${var.db_username}:${var.db_password}@${aws_docdb_cluster.main.endpoint}:27017/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false"
   }
 
   enable_branch_auto_build = true
   enable_basic_auth        = false
+
+  depends_on = [
+    aws_iam_role_policy_attachment.amplify_admin_policy
+  ]
 }
 
 resource "aws_amplify_branch" "main" {
   app_id      = aws_amplify_app.main.id
-  branch_name = "main"
+  branch_name = "main" # Or your default branch
   stage       = "PRODUCTION"
 }
-//
