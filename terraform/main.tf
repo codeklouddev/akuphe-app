@@ -125,11 +125,11 @@ resource "aws_amplify_app" "main" {
   iam_service_role_arn = data.aws_iam_role.amplify_role_data.arn
 
   # Connects the Amplify backend to our VPC
-  vpc_config {
-    vpc_id             = data.aws_vpc.default.id
-    security_group_ids = [aws_security_group.amplify_sg.id]
-    subnet_ids         = data.aws_subnets.default.ids
-  }
+  #vpc_config {
+    #vpc_id             = data.aws_vpc.default.id
+    #security_group_ids = [aws_security_group.amplify_sg.id]
+    #subnet_ids         = data.aws_subnets.default.ids
+  #}
 
   # Environment variables for the Next.js app
   environment_variables = {
