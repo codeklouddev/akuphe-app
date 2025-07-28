@@ -103,6 +103,15 @@ resource "aws_iam_role_policy_attachment" "amplify_admin_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess-Amplify"
 }
 
+# Add a 30-second delay to allow IAM permissions to propagate
+resource "time_sleep" "wait_for_iam_propagation" {
+  create_duration = "30s"
+
+  depends_on = [
+    aws_iam_role_policy_attachment.amplify_admin_policy
+  ]
+}
+
 
 #------------------------------------------------------------------------------
 # WEB & APP TIER (AWS Amplify for Next.js)
@@ -129,8 +138,9 @@ resource "aws_amplify_app" "main" {
   enable_branch_auto_build = true
   enable_basic_auth        = false
 
+  # This now depends on the delay, ensuring permissions are ready
   depends_on = [
-    aws_iam_role_policy_attachment.amplify_admin_policy
+    time_sleep.wait_for_iam_propagation
   ]
 }
 
