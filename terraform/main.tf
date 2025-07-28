@@ -103,10 +103,9 @@ resource "aws_iam_role_policy_attachment" "amplify_admin_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess-Amplify"
 }
 
-# Data source to wait for the IAM role to be fully propagated.
-# This will only succeed when the role is available via the API.
-data "aws_iam_role" "amplify_role_data" {
-  name = aws_iam_role.amplify_service_role.name
+# Add a 90-second delay to allow IAM permissions to propagate
+resource "time_sleep" "wait_for_iam_propagation" {
+  create_duration = "90s"
 
   depends_on = [
     aws_iam_role_policy_attachment.amplify_admin_policy
@@ -122,11 +121,11 @@ resource "aws_amplify_app" "main" {
   name                 = var.app_name
   repository           = "https://github.com/${var.github_repo}"
   access_token         = var.github_token
-  iam_service_role_arn = data.aws_iam_role.amplify_role_data.arn
+  iam_service_role_arn = aws_iam_role.amplify_service_role.arn
 
   # Connects the Amplify backend to our VPC
   #vpc_config {
-    #vpc_id             = data.aws_vpc.default.id
+   # vpc_id             = data.aws_vpc.default.id
     #security_group_ids = [aws_security_group.amplify_sg.id]
     #subnet_ids         = data.aws_subnets.default.ids
   #}
@@ -139,9 +138,9 @@ resource "aws_amplify_app" "main" {
   enable_branch_auto_build = true
   enable_basic_auth        = false
 
-  # This now depends on the data source, ensuring the role is ready
+  # This now depends on the delay, ensuring permissions are ready
   depends_on = [
-    data.aws_iam_role.amplify_role_data
+    time_sleep.wait_for_iam_propagation
   ]
 }
 
