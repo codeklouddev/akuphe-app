@@ -103,9 +103,9 @@ resource "aws_iam_role_policy_attachment" "amplify_admin_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess-Amplify"
 }
 
-# Add a 60-second delay to allow IAM permissions to propagate
+# Add a 90-second delay to allow IAM permissions to propagate
 resource "time_sleep" "wait_for_iam_propagation" {
-  create_duration = "60s"
+  create_duration = "90s"
 
   depends_on = [
     aws_iam_role_policy_attachment.amplify_admin_policy
@@ -126,7 +126,7 @@ resource "aws_amplify_app" "main" {
   # Connects the Amplify backend to our VPC
   #vpc_config {
     #vpc_id             = data.aws_vpc.default.id
-    #security_group_ids = [aws_security_group.amplify_sg.id]
+   # security_group_ids = [aws_security_group.amplify_sg.id]
     #subnet_ids         = data.aws_subnets.default.ids
   #}
 
